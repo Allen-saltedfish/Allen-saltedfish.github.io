@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <title>数字</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            background: #f7f7f8;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* 背景水印：放在 SVG 内，视觉上半透明、不可交互 */
+        svg .watermark {
+            fill: rgba(3, 48, 72, 0.06);
+            font-weight: 700;
+            font-size: 16px;
+            /* 改为 16px */
+            letter-spacing: 6px;
+            white-space: pre;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .card {
+            background: #fff;
+            padding: 18px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            max-width: 640px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+            align-items: center;
+        }
+
+        .controls label {
+            font-size: 13px;
+            color: #223;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            background: #fbfbfd;
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid #eef2f4;
+        }
+
+        .controls input[type="text"] {
+            width: 72px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: 1px solid #ccd6db;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        /* 新增按钮样式 */
+        .toggle-btn {
+            appearance: none;
+            border: 1px solid #cbd5db;
+            background: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .toggle-btn[aria-pressed="true"] {
+            background: #eef9f6;
+            border-color: #0b8043;
+            color: #044d33;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .label {
+            font-size: 14px;
+            fill: #111;
+        }
+
+        .small {
+            font-size: 12px;
+            fill: #333;
+        }
+
+        .angle-mark {
+            stroke: #111;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .right-square {
+            fill: #111;
+            opacity: 0.9;
+        }
+
+        polygon.shape {
+            cursor: pointer;
+            transition: stroke-width 120ms ease, filter 120ms ease, opacity 120ms ease, fill 160ms ease;
+            stroke-linejoin: round;
+            stroke-linecap: round;
+        }
+
+        #tri-right {
+            fill: #ff0000;
+            stroke: #aa0000;
+            stroke-width: 2;
+            opacity: 0.95;
+        }
+
+        #trap-right {
+            fill: #e6fffa;
+            stroke: #0e9aa7;
+            stroke-width: 2;
+            opacity: 0.95;
+        }
+
+        #trap-left {
+            fill: #fff0f6;
+            stroke: #c41d56;
+            stroke-width: 2;
+            opacity: 0.95;
+        }
+
+        #third-right {
+            fill: #f3e8ff;
+            stroke: #6d28d9;
+            stroke-width: 2;
+            opacity: 0.95;
+        }
+
+        #third-left {
+            fill: #fffbea;
+            stroke: #b36b00;
+            stroke-width: 2;
+            opacity: 0.95;
+        }
+
+        #third-1 {
+            fill: #e7f4ff;
+            stroke: #1e6fb3;
+            stroke-width: 2;
+            opacity: 0.95;
+        }
+
+        #third-2 {
+            fill: #f0fff4;
+            stroke: #0b8043;
+            stroke-width: 2;
+            opacity: 0.95;
+        }
+
+        #tri-right.selected {
+            fill: #bdefff;
+            stroke: #013349;
+            opacity: 1;
+        }
+
+        #trap-right.selected {
+            fill: #c8fff4;
+            stroke: #066d6f;
+            opacity: 1;
+        }
+
+        #trap-left.selected {
+            fill: #ffd6e6;
+            stroke: #9a173f;
+            opacity: 1;
+        }
+
+        #third-right.selected {
+            fill: #e6dbff;
+            stroke: #4b1fb0;
+            opacity: 1;
+        }
+
+        #third-left.selected {
+            fill: #fff8c8;
+            stroke: #8a5400;
+            opacity: 1;
+        }
+
+        #third-1.selected {
+            fill: #cfe6ff;
+            stroke: #144f7a;
+            opacity: 1;
+        }
+
+        #third-2.selected {
+            fill: #dfffe6;
+            stroke: #0a5f34;
+            opacity: 1;
+        }
+
+        .shape.selected {
+            stroke-width: 4;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.12));
+            opacity: 1;
+        }
+
+        .center-number {
+            font-size: 20px;
+            font-weight: 600;
+            fill: #033048;
+            pointer-events: none;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+
+        polygon.shape:focus {
+            outline: none;
+            stroke-dasharray: 3 2;
+        }
+
+        .angle-label {
+            font-size: 13px;
+            fill: #045b36;
+            font-weight: 600;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <svg viewBox="0 0 600 600" role="img"
+            aria-label="30 60 90 triangle and its reflection about the leg adjacent to 30°; and a right trapezoid whose slanted side makes 60 degrees with the base"
+            xmlns="http://www.w3.org/2000/svg">
+            <!-- 使用 pattern 在整个 SVG 背景上重复水印，水印不可交互 -->
+            <defs>
+                <pattern id="wm" patternUnits="userSpaceOnUse" width="220" height="140">
+                    <!-- 在每个格子中央绘制两行文本，并旋转，使重复呈倾斜效果 -->
+                    <text class="watermark" x="110" y="70" text-anchor="middle" dominant-baseline="middle"
+                        transform="rotate(-30 110 70)" aria-hidden="true">
+                        <tspan x="110" dy="-8"> "　　 小园丁"</tspan>
+                    </text>
+                </pattern>
+            </defs>
+
+            <!-- 背景矩形填充重复的 pattern，放在图形下面，不可交互 -->
+            <rect x="0" y="0" width="100%" height="100%" fill="url(#wm)" aria-hidden="true" pointer-events="none" />
+
+            <polygon id="tri-right" class="shape" points="205.00, 149.90 355.00,149.90 280.00,20.00" role="button"
+                tabindex="0" aria-pressed="false" aria-label="右侧三角形 1" />
+
+            <text id="num1" class="center-number" x="280" y="106">1</text>
+
+            <polygon id="trap-right" class="shape" points="280.00,149.90 355.00,149.90 398.30,224.90  280.00,224.90"
+                role="button" tabindex="0" aria-pressed="false"
+                aria-label="直角梯形 3，左直角边对齐到对称轴，底边长度等于三角形底边，斜边与底边夹角 60°" />
+
+            <polygon id="trap-left" class="shape" points="205.00,149.90 280.00,149.90 280.00,224.90  161.70,224.90"
+                role="button" tabindex="0" aria-pressed="false"
+                aria-label="直角梯形 3，左直角边对齐到对称轴，底边长度等于三角形底边，斜边与底边夹角 60°" />
+
+            <polygon id="third-right" class="shape" points="343.30,224.90 398.30,224.90 430.05,279.90  343.30,279.90"
+                role="button" tabindex="0" aria-pressed="false"
+                aria-label="直角梯形 3，左直角边对齐到对称轴，底边长度等于三角形底边，斜边与底边夹角 60°" />
+
+            <polygon id="third-left" class="shape" points="161.70,224.90 216.70,224.90 216.70,279.90  129.95,279.90"
+                role="button" tabindex="0" aria-pressed="false"
+                aria-label="直角梯形 3，左直角边对齐到对称轴，底边长度等于三角形底边，斜边与底边夹角 60°" />
+
+            <polygon id="third-1" class="shape" points="280.00,224.90 343.30,224.90 343.30,279.90  280,279.90"
+                role="button" tabindex="0" aria-pressed="false"
+                aria-label="直角梯形 3，左直角边对齐到对称轴，底边长度等于三角形底边，斜边与底边夹角 60°" />
+
+            <polygon id="third-2" class="shape" points="216.70,224.90 280.00,224.90 280.0,279.90  216.7,279.90"
+                role="button" tabindex="0" aria-pressed="false"
+                aria-label="直角梯形 3，左直角边对齐到对称轴，底边长度等于三角形底边，斜边与底边夹角 60°" />
+
+            <text id="num2" class="center-number" x="329" y="190">2</text>
+            <text id="num3" class="center-number" x="230" y="190">3</text>
+            <text id="num4" class="center-number" x="180" y="254">5</text>
+            <text id="num5" class="center-number" x="250" y="254">6</text>
+            <text id="num6" class="center-number" x="310" y="254">7</text>
+            <text id="num7" class="center-number" x="379" y="254">4</text>
+
+            <text id="60" class="angle-label hidden" x="408" y="180">
+                <tspan x="408" dy="0" id="60-value" style="font-size:20px"></tspan>
+                <tspan x="408" dy="1.2em" style="font-size: 14px;">[60+]</tspan>
+            </text>
+            <text id="2040" class="angle-label hidden" x="108" y="180" style="font-size:18px">
+                <tspan x="108" dy="0" id="2040-value" style="font-size:20px"></tspan>
+                <tspan x="108" dy="1.2em" style="font-size: 14px;">[20-40]</tspan>
+            </text>
+            <text id="4060" class="angle-label hidden" x="310" y="16" style="font-size:18px">
+                <tspan x="310" dy="0" id="4060-value" style="font-size:20px"></tspan>
+                <tspan x="310" dy="1.2em" style="font-size: 14px;">[40-60]</tspan>
+            </text>
+
+            <text id="missing" class="small" x="300" y="360" text-anchor="middle" fill="#7b8794">缺失数字: 8 9</text>
+        </svg>
+
+        <div class="controls" aria-hidden="false">
+            <label>年份
+                <input id="inputYear" type="text" inputmode="numeric" aria-label="年份 (正整数)" placeholder="2025"
+                    pattern="^[1-9]\d*$" title="请输入正整数（例如 2025）" maxlength="4"
+                    oninput="this.value = this.value.replace(/[^\d]/g, ''); if(this.value==='0') this.value=''; if(this.value.length>4) this.value=this.value.slice(0,4);" />
+            </label>
+            <label>月份
+                <input id="inputMonth" type="text" inputmode="numeric" aria-label="月份 (1-12)" placeholder="7"
+                    pattern="^(?:[1-9]|1[0-2])$" title="请输入 1 到 12 的整数" maxlength="2"
+                    oninput="this.value = this.value.replace(/[^\d]/g, ''); if(this.value){let n=Number(this.value); if(n<1) this.value=''; else if(n>12) this.value='12';}" />
+            </label>
+            <label>日期
+                <input id="inputDay" type="text" inputmode="numeric" aria-label="日期 (1-31)" placeholder="15"
+                    pattern="^(?:[1-9]|[12][0-9]|3[01])$" title="请输入 1 到 31 的整数" maxlength="2"
+                    oninput="this.value = this.value.replace(/[^\d]/g, ''); if(this.value){let n=Number(this.value); if(n<1) this.value=''; else if(n>31) this.value='31';}" />
+            </label>
+
+            <!-- 新增：控制 60/2/3 显示隐藏的按钮 -->
+
+            <button id="btnExtra2" type="button" class="toggle-btn" data-target="2040"
+                aria-pressed="false">20-40</button>
+            <button id="btnExtra3" type="button" class="toggle-btn" data-target="4060"
+                aria-pressed="false">40-60</button>
+            <button id="btnExtra1" type="button" class="toggle-btn" data-target="60" aria-pressed="false">60+</button>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const shapes = Array.from(document.querySelectorAll('.shape'));
+
+            function updateAria(el, state) {
+                el.setAttribute('aria-pressed', state ? 'true' : 'false');
+            }
+
+            function toggleElement(el) {
+                const selected = el.classList.toggle('selected');
+                updateAria(el, selected);
+            }
+
+            shapes.forEach(el => {
+                el.addEventListener('click', (e) => {
+                    toggleElement(e.currentTarget);
+                });
+
+                el.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleElement(e.currentTarget);
+                    }
+                });
+
+                if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+                if (!el.hasAttribute('aria-pressed')) updateAria(el, el.classList.contains('selected'));
+            });
+        })();
+
+        (function () {
+            const inputYear = document.getElementById('inputYear');
+            const inputMonth = document.getElementById('inputMonth');
+            const inputDay = document.getElementById('inputDay');
+
+            const num4 = document.getElementById('num4');
+            const num5 = document.getElementById('num5');
+            const num6 = document.getElementById('num6');
+            const num7 = document.getElementById('num7');
+            const missingEl = document.getElementById('missing');
+
+            function digitsSumFromString(s) {
+                return String(s).split('').filter(c => /\d/.test(c)).reduce((a, c) => a + Number(c), 0);
+            }
+
+            function reduceToOneDigit(n) {
+                n = Math.abs(Number(n)) || 0;
+                // 特殊逻辑：如果为 0（即两个 0 相加的情况），结果视为 5
+                if (n === 0) return 5;
+                while (n >= 10) {
+                    n = String(n).split('').reduce((a, c) => a + Number(c), 0);
+                    if (n === 0) return 5;
+                }
+                return n;
+            }
+
+            function pad2(v) {
+                const s = String(v || '');
+                return s.length === 1 ? '0' + s : s;
+            }
+
+            function updateComputed() {
+                const yearRaw = (inputYear.value || '').trim();
+                const monthRaw = (inputMonth.value || '').trim();
+                const dayRaw = (inputDay.value || '').trim();
+                console.log('输入：', yearRaw, monthRaw, dayRaw);
+                // month: 两位数相加，若相加值 >= 10 则继续把个位与十位相加直到一位数
+                const monthStr = pad2(monthRaw);
+                const monthSum = digitsSumFromString(monthStr);
+                const monthReduced = reduceToOneDigit(monthSum);
+
+                // day: 日期两位数相加（例如 15 -> 1+5 = 6）
+                const dayStr = pad2(dayRaw);
+                const daySum = digitsSumFromString(dayStr);
+                const dayReduced = digitsSumFromString(daySum);
+                // year: 高两位相加，低两位相加（如 2025 -> 高: '20' -> 2 + 0 = 2；低: '25' -> 2 + 5 = 7）
+                const yearStrFull = (String(yearRaw).padStart(4, '0')).slice(-4);
+                const yearHigh = digitsSumFromString(yearStrFull.slice(0, 2));
+                const yearLow = digitsSumFromString(yearStrFull.slice(2, 4));
+                const yearHighSum = digitsSumFromString(yearHigh);
+                const yearLowSum = digitsSumFromString(yearLow);
+                const yearHighReduced = reduceToOneDigit(yearHighSum);
+                const yearLowReduced = reduceToOneDigit(yearLowSum);
+
+                const secRight = reduceToOneDigit(yearHighReduced + yearLowReduced);
+                const secLeft = reduceToOneDigit(dayReduced + monthReduced);
+                const triBase = reduceToOneDigit(secRight + secLeft);
+
+                num4.textContent = String(dayReduced);
+                num5.textContent = String(monthReduced);
+                num6.textContent = String(yearHighReduced);
+                num7.textContent = String(yearLowReduced);
+                num3.textContent = String(secLeft);
+                num2.textContent = String(secRight);
+                num1.textContent = String(triBase);
+
+                const extra1El = document.getElementById('60-value');
+                const extra2El = document.getElementById('2040-value');
+                const extra3El = document.getElementById('4060-value');
+
+
+                const extra_1_value_1 = reduceToOneDigit(yearHighReduced + secRight);
+                const extra_1_value_2 = reduceToOneDigit(yearLowReduced + secRight);
+                const extra_1_value_3 = reduceToOneDigit(extra_1_value_1 + extra_1_value_2);
+
+
+
+                console.log('extra2', monthReduced, secLeft, dayReduced)
+                const extra_2_value_1 = reduceToOneDigit(monthReduced + secLeft);
+                const extra_2_value_2 = reduceToOneDigit(dayReduced + secLeft);
+                const extra_2_value_3 = reduceToOneDigit(extra_2_value_1 + extra_2_value_2);
+
+
+                const extra_3_value_1 = reduceToOneDigit(triBase + secRight);
+                const extra_3_value_2 = reduceToOneDigit(triBase + secLeft);
+                const extra_3_value_3 = reduceToOneDigit(extra_3_value_1 + extra_3_value_2);
+
+
+                setExtraText(extra1El, String(extra_1_value_1) + String(extra_1_value_2) + String(extra_1_value_3));
+                setExtraText(extra2El, String(extra_2_value_1) + String(extra_2_value_2) + String(extra_2_value_3));
+                setExtraText(extra3El, String(extra_3_value_1) + String(extra_3_value_2) + String(extra_3_value_3));
+
+                updateMissing();
+            }
+
+            function updateMissing() {
+                const nums = [];
+                for (let i = 1; i <= 7; i++) {
+                    const el = document.getElementById('num' + i);
+                    if (el) nums.push(el.textContent || '');
+                }
+                const combined = nums.join('');
+                const missing = [];
+                for (let i = 1; i <= 9; i++) {
+                    if (!combined.includes(String(i))) missing.push(String(i));
+                }
+                if (missing.length === 0) {
+                    missingEl.textContent = '全部出现';
+                    missingEl.setAttribute('fill', '#0b8043');
+                } else {
+                    missingEl.textContent = '缺失数字: ' + missing.join(' ');
+                    missingEl.setAttribute('fill', '#7b8794');
+                }
+            }
+
+            inputYear.addEventListener('input', updateComputed);
+            inputMonth.addEventListener('input', updateComputed);
+            inputDay.addEventListener('input', updateComputed);
+
+            // 初始一次计算（如果输入框为空则保持原有 num4..7）
+            updateComputed();
+
+            // ---- 新增：控制 60/2/3 显示隐藏 ----
+            const toggleButtons = Array.from(document.querySelectorAll('.toggle-btn[data-target]'));
+            toggleButtons.forEach(btn => {
+                const targetId = btn.getAttribute('data-target');
+                const targetEl = document.getElementById(targetId);
+                if (!targetEl) {
+                    btn.disabled = true;
+                    return;
+                }
+
+                // 初始化按钮状态与文本
+                const isVisible = !targetEl.classList.contains('hidden');
+                btn.setAttribute('aria-pressed', isVisible ? 'true' : 'false');
+                btn.textContent = `${targetId} ${isVisible ? '显示' : '隐藏'}`;
+
+                btn.addEventListener('click', () => {
+                    const nowHidden = targetEl.classList.toggle('hidden');
+                    const pressed = !nowHidden;
+                    btn.setAttribute('aria-pressed', pressed ? 'true' : 'false');
+                    btn.textContent = `${targetId} ${pressed ? '显示' : '隐藏'}`;
+                });
+            });
+            function setExtraText(targetEl, text) {
+                if (!targetEl) return;
+                // 限制长度避免撑破布局
+                const v = (text || '').toString().trim().slice(0, 20);
+                targetEl.textContent = v;
+            }
+        })();
+    </script>
+</body>
+
+</html>
